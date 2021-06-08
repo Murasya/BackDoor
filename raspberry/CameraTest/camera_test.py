@@ -1,5 +1,6 @@
 # 1枚写真をとってmy_pic.jpgに保存するプログラム
 
+
 # -*- coding: utf-8 -*-
 import time
 import picamera
