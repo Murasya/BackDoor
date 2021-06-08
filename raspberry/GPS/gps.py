@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE
 import json
 import requests
 import urllib.request
+import settings
 
 def get_location():
     iwlist = Popen('iwlist wlan0 scan'.split(), stdout=PIPE)
@@ -29,7 +30,7 @@ def get_location():
 
     print(query)
 
-    url = 'https://www.googleapis.com/geolocation/v1/geolocate?key=(API_KEY)'
+    url = 'https://www.googleapis.com/geolocation/v1/geolocate?key='+settings.API_KEY
     headers = {"Content-Type" : "application/json"}
     method = "POST"
     request = urllib.request.Request(url, data=query, headers=headers, method=method)
@@ -40,4 +41,4 @@ def get_location():
         data = json.loads(response_body)
         print(data['location']['lat'], data['location']['lng'], data['accuracy'])
     
-    return data['location']['lat'], data['location']['lng'], data['accuracy']
+    return data
