@@ -29,7 +29,7 @@ def get_location():
 
     print(query)
 
-    url = 'https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyDMshWDUJan7O0Zmlh5SZ_X8rCGtBFzG4o'
+    url = 'https://www.googleapis.com/geolocation/v1/geolocate?key=(API_KEY)'
     headers = {"Content-Type" : "application/json"}
     method = "POST"
     request = urllib.request.Request(url, data=query, headers=headers, method=method)
