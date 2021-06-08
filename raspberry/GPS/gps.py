@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 import json
 import requests
 import urllib.request
-import settings
+from GPS import settings
 
 def get_location():
     iwlist = Popen('iwlist wlan0 scan'.split(), stdout=PIPE)
