@@ -12,7 +12,7 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 
-doc_ref = db.collection(u'Notification')
-doc_ref.add({
-    u'notification':1
+doc_ref = db.collection(u'Notification').document(u'AndroidUser')
+doc_ref.set({
+    u'message':u'村社さんが盗まれました！！！'
 })
