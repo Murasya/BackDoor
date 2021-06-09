@@ -4,7 +4,9 @@
 
 from GPS.gps import get_location
 from FaceRecognition.face_recognition import is_owner
+from DistanceDetection.distance_detection import detect_person
 import time
+
 
 def main():
     
@@ -14,6 +16,7 @@ def main():
         # 人が侵入するまで検知し続け、検知したらループ抜ける
         while(True):
             if(detect_person()):
+                time.sleep(1)
                 break
 
         # オーナーかを判断
@@ -27,7 +30,7 @@ def main():
         else:
             # オーナーでなければ、定期的に位置情報を報告
             while(1):
-                time.sleep(300000) # 一旦5分に1回とする
+                time.sleep(300) # 一旦5分に1回とする
                 data = get_location() #{'location':{'lat':xx, 'lng':xx}, 'accuracy':xx}
                 send_location(data)
 
