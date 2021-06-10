@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BackDoor</string>
+    <string name="msg_token_fmt"></string>
 </resources>
