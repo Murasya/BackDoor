@@ -14,5 +14,5 @@ db = firestore.client()
 
 doc_ref = db.collection(u'Notification').document(u'AndroidUser')
 doc_ref.set({
-    u'message':u'村社さんが盗まれました！！！'
+    u'message':u'岩谷が盗まれました！！！'
 })

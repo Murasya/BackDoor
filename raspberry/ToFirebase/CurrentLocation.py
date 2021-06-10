@@ -1,8 +1,9 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+import sys
 
-
+args = sys.argv
 
 # Use the application default credentials
 cred = credentials.ApplicationDefault()
@@ -14,7 +15,7 @@ db = firestore.client()
 
 doc_ref = db.collection(u'CurrentLocation')
 doc_ref.add({
-    u'latitude': 33.44444444,
-    u'longitude': 135.0000000,
-    u'time': 1998
+    u'latitude': float(args[1]),
+    u'longitude': float(args[2]),
+    u'time': args[3]
 })

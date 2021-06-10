@@ -13,27 +13,28 @@ GPIO.setmode(GPIO.BCM)              #GPIOのモードを"GPIO.BCM"に設定
 GPIO.setup(Trig, GPIO.OUT)          #GPIO27を出力モードに設定
 GPIO.setup(Echo, GPIO.IN)           #GPIO18を入力モードに設定
 
+#HC-SR04で距離を測定する関数
+def read_distance():
+    GPIO.output(Trig, GPIO.HIGH)            #GPIO27の出力をHigh(3.3V)にする
+    time.sleep(0.00001)                     #10μ秒間待つ
+    GPIO.output(Trig, GPIO.LOW)             #GPIO27の出力をLow(0V)にする
+
+    sig_off = time.time()
+    while GPIO.input(Echo) == GPIO.LOW:     #GPIO18がLowの時間
+        sig_off = time.time()
+    sig_on = time.time()
+    while GPIO.input(Echo) == GPIO.HIGH:    #GPIO18がHighの時間
+        sig_on = time.time()
+
+    duration = sig_off - sig_on             #GPIO18がHighしている時間を算術
+    distance = -1 * duration * 34000 / 2         #距離を求める(cm)
+
+    return distance
 
 def detect_person():
 
-    #HC-SR04で距離を測定する関数
-    def read_distance():
-        GPIO.output(Trig, GPIO.HIGH)            #GPIO27の出力をHigh(3.3V)にする
-        time.sleep(0.00001)                     #10μ秒間待つ
-        GPIO.output(Trig, GPIO.LOW)             #GPIO27の出力をLow(0V)にする
-
-        sig_off = time.time()
-        while GPIO.input(Echo) == GPIO.LOW:     #GPIO18がLowの時間
-            sig_off = time.time()
-        sig_on = time.time()
-        while GPIO.input(Echo) == GPIO.HIGH:    #GPIO18がHighの時間
-            sig_on = time.time()
-
-        duration = sig_off - sig_on             #GPIO18がHighしている時間を算術
-        distance = -1 * duration * 34000 / 2         #距離を求める(cm)
-        return distance
-
     cm = read_distance()                   #HC-SR04で距離を測定する
+    print(cm)
     if cm > 2 and cm < 30:                #距離が2～30cmの場合
         return True
     else:
