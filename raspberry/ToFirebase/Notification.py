@@ -1,6 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from datetime import datetime
 
 
 
@@ -14,5 +15,5 @@ db = firestore.client()
 
 doc_ref = db.collection(u'Notification').document(u'AndroidUser')
 doc_ref.set({
-    u'message':u'岩谷が盗まれました！！！'
+    u'message':u'岩谷が盗まれました！！！' + str(datetime.now())
 })

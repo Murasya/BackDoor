@@ -10,7 +10,10 @@ from GPSmodule.gps import get_location
 import time
 import subprocess
 import sys
+import uuid
 
+# user_id = str(uuid.uuid4())
+user_id = 'AndroidUser'
 
 def main():
     
@@ -38,7 +41,7 @@ def main():
             while(1):
                 time.sleep(10) # 10秒に1回
                 data = get_location() #(latitude, longitude, timestamp)
-                res = subprocess.run(["python3", 'ToFirebase/CurrentLocation.py', str(data[0]), str(data[1]), str(data[2])], stdout=subprocess.PIPE)
+                res = subprocess.run(["python3", 'ToFirebase/CurrentLocation.py', user_id, str(data[0]), str(data[1]), str(data[2])], stdout=subprocess.PIPE)
                 sys.stdout.buffer.write(res.stdout)
 
                 if(not detect_person()):
