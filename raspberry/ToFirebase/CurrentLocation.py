@@ -13,8 +13,8 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 
-doc_ref = db.collection(u'CurrentLocation')
-doc_ref.add({
+doc_ref = db.collection(u'CurrentLocation').document(u'AndroidUser')
+doc_ref.set({
     u'latitude': float(args[1]),
     u'longitude': float(args[2]),
     u'time': args[3]
