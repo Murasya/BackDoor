@@ -56,6 +56,7 @@ while True:
     tick = cv2.getTickCount()
     # カメラキャプチャー
     ret, image = cap.read()
+    image = cv2.flip(image, -1) # flip video image vertically
     # 画像リサイズ
     image = cv2.resize(image,dsize=(int(frame_width),int(frame_height)))
     # リサイズした画像をコピー
