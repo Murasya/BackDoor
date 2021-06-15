@@ -21,6 +21,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
+import java.lang.Math.sqrt
 import java.util.*
 
 
@@ -39,7 +40,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private val db = Firebase.firestore
     //private var currentLocation = CurrentLocation()
 
-    private var lastSize = 0;
+    private var centerPosition = LatLng(0.0, 0.0);
+    private var zoomMagnification = 0;
+
     private var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,6 +88,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                         lineOptions.width(10F);
                         lineOptions.color(0x550000ff);
 
+                        calculationCenter(points)
                         mMap.addPolyline(lineOptions)
                     }
                     Log.d("getFirebase", "Current data: $currentLocation")
@@ -93,22 +97,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 }
             }
         })
-
-        /*
-        var i = 0
-        if(currentLocation.latitude?.iterator() != null) {
-            Log.d("iscreateLocation", "true")
-            while (currentLocation.latitude?.iterator()!!.hasNext()) {
-                mMap.addPolyline(PolylineOptions()
-                    .clickable(true)
-                    .add(
-                        currentLocation.latitude?.let { currentLocation.longitude?.let { it1 -> LatLng(it.get(i), it1.get(i)) } }))
-                i = i+1
-            }
-        }
-        */
-
-        //createLocationPAToStolenCar(mMap,currentLocation)
 
         requestPermission()
 
@@ -147,6 +135,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
                 //sendLocationToGoogleMap()
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(centerPosition))
             }
         })
     }
@@ -274,7 +263,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     // Store a data object with the polyline, used here to indicate an arbitrary type.
     }
 
+    private fun calculationCenter(points : ArrayList<LatLng>){
+        var latTmp = 0.0
+        var lonTmp = 0.0
+        var latSD = 0.0
+        var lonSD = 0.0
+        var latLngSD = LatLng(0.0,0.0)
+        for (point in points) {
+            latTmp = latTmp + point.latitude
+            lonTmp = lonTmp + point.longitude
+        }
+        latTmp = latTmp/points.size
+        lonTmp = lonTmp/points.size
 
+        for (point in points) {
+            latSD = latSD + (point.latitude - latTmp)*(point.latitude - latTmp)
+            lonSD = lonSD + (point.longitude - lonTmp)*(point.longitude - lonTmp)
+        }
+
+        latSD = sqrt(latSD/points.size)
+        lonSD = sqrt(lonSD/points.size)
+
+        latLngSD = LatLng(latSD,lonSD)
+        centerPosition = LatLng(latTmp,lonTmp)
+    }
 
     private fun requestPermission() {
         val permissionAccessCoarseLocationApproved =
