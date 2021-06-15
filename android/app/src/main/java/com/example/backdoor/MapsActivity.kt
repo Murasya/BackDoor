@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.backdoor.databinding.ActivityMapsBinding
@@ -19,6 +18,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.*
@@ -37,7 +37,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private val db = Firebase.firestore
-    private lateinit var currentLocation: CurrentLocation
+    private var currentLocation = CurrentLocation()
 
     var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +65,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                     return@addSnapshotListener
                 }
                 if(snapshot != null && snapshot.exists()) {
-                    Log.d("getFirebase", "Current data: ${snapshot.data}")
+                    currentLocation = snapshot.toObject<CurrentLocation>()!!
+                    Log.d("getFirebase", "Current data: $currentLocation")
                 } else {
                     Log.d("getFirebase", "Current data: null")
                 }

@@ -5,5 +5,5 @@ import com.google.firebase.Timestamp
 data class CurrentLocation(
     val latitude: List<Double>? = null,
     val longitude: List<Double>? = null,
-    val time: Timestamp? = null,
+    val time: List<Timestamp>? = null,
 )
