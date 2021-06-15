@@ -37,9 +37,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private val db = Firebase.firestore
-    private var currentLocation = CurrentLocation()
+    //private var currentLocation = CurrentLocation()
 
-    var current_location = LatLng(0.0, 0.0)
+    private var lastSize = 0;
+    private var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -65,13 +66,49 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                     return@addSnapshotListener
                 }
                 if(snapshot != null && snapshot.exists()) {
-                    currentLocation = snapshot.toObject<CurrentLocation>()!!
+                    val currentLocation = snapshot.toObject<CurrentLocation>()!!
+                    //if(currentLocation.latitude?.iterator() != null) {
+                    Log.d("iscreateLocation", "true")
+                    if(currentLocation.latitude != null && currentLocation.longitude != null) {
+                        val points = ArrayList<LatLng>()
+                        val lineOptions = PolylineOptions()
+                        val latIterator = currentLocation.latitude.iterator()
+                        val lonIterator = currentLocation.longitude.iterator()
+                        while (latIterator.hasNext() && lonIterator.hasNext()) {
+                            val lat = latIterator.next()
+                            val lon = lonIterator.next()
+                            points.add(LatLng(lat,lon))
+                            Log.d("iscreateLocation", "lat : $lat, lon : $lon")
+                            //Log.d("Polyline", "${mMap.}")
+                        }
+                        lineOptions.addAll(points);
+                        lineOptions.width(10F);
+                        lineOptions.color(0x550000ff);
+
+                        mMap.addPolyline(lineOptions)
+                    }
                     Log.d("getFirebase", "Current data: $currentLocation")
                 } else {
                     Log.d("getFirebase", "Current data: null")
                 }
             }
         })
+
+        /*
+        var i = 0
+        if(currentLocation.latitude?.iterator() != null) {
+            Log.d("iscreateLocation", "true")
+            while (currentLocation.latitude?.iterator()!!.hasNext()) {
+                mMap.addPolyline(PolylineOptions()
+                    .clickable(true)
+                    .add(
+                        currentLocation.latitude?.let { currentLocation.longitude?.let { it1 -> LatLng(it.get(i), it1.get(i)) } }))
+                i = i+1
+            }
+        }
+        */
+
+        //createLocationPAToStolenCar(mMap,currentLocation)
 
         requestPermission()
 
@@ -221,6 +258,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         intent.data = Uri.parse(str)
         startActivity(intent)
     }
+
+    //盗まれた場合、自身の駐車場から盗難車の現在位置までの経路を生成
+    private fun createLocationPAToStolenCar(googleMap: GoogleMap, currentLocation: CurrentLocation){
+        var i = 0
+        if(currentLocation.time?.iterator() != null) {
+            while (currentLocation.time?.iterator()!!.hasNext()) {
+                mMap.addPolyline(PolylineOptions()
+                    .clickable(true)
+                    .add(
+                        currentLocation.latitude?.let { currentLocation.longitude?.let { it1 -> LatLng(it.get(i), it1.get(i)) } }))
+                i = i+1
+            }
+        }
+    // Store a data object with the polyline, used here to indicate an arbitrary type.
+    }
+
+
 
     private fun requestPermission() {
         val permissionAccessCoarseLocationApproved =
