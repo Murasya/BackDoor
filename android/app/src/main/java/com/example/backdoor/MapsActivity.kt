@@ -18,6 +18,8 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.*
 
@@ -34,6 +36,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
+    private val db = Firebase.firestore
 
     var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +54,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             // Log and toast
             val msg = getString(R.string.msg_token_fmt) + token
             Log.d("TAG", msg)
-            Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+            val user = User(msg)
+            db.collection("Users").document("AndroidUser").set(user)
         })
 
         requestPermission()
