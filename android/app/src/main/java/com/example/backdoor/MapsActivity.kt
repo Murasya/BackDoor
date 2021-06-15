@@ -37,6 +37,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private val db = Firebase.firestore
+    private lateinit var currentLocation: CurrentLocation
 
     var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +45,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w("TAG", "Fetching FCM registration token failed", task.exception)
+                Log.w("fcmToken", "Fetching FCM registration token failed", task.exception)
                 return@OnCompleteListener
             }
 
@@ -53,9 +54,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
             // Log and toast
             val msg = getString(R.string.msg_token_fmt) + token
-            Log.d("TAG", msg)
+            Log.d("fcmToken", msg)
             val user = User(msg)
-            db.collection("Users").document("AndroidUser").set(user)
+            val userId = "AndroidUser"
+            db.collection("Users").document(userId).set(user)
+            val docRef = db.collection("CurrentLocation").document(userId)
+            docRef.addSnapshotListener {snapshot, e ->
+                if (e != null) {
+                    Log.w("getFirebase", "listen:error", e)
+                    return@addSnapshotListener
+                }
+                if(snapshot != null && snapshot.exists()) {
+                    Log.d("getFirebase", "Current data: ${snapshot.data}")
+                } else {
+                    Log.d("getFirebase", "Current data: null")
+                }
+            }
         })
 
         requestPermission()
