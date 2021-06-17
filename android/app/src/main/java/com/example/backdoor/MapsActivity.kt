@@ -61,7 +61,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             Log.d("fcmToken", msg)
             val user = User(msg)
             val userId = "AndroidUser"
-            db.collection("Users").document(userId).set(user)
+            db.collection("Users").document(userId)
+                .set(user)
+                .addOnSuccessListener { Log.d("fcmToken", "DocumentSnapshot successfully written!") }
+                .addOnFailureListener { e -> Log.w("fcmToken", "Error writing document", e) }
             val docRef = db.collection("CurrentLocation").document(userId)
             docRef.addSnapshotListener {snapshot, e ->
                 if (e != null) {
