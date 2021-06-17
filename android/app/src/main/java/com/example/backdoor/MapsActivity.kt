@@ -3,6 +3,8 @@ package com.example.backdoor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.GnssAntennaInfo
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -41,7 +43,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     //private var currentLocation = CurrentLocation()
 
     private var centerPosition = LatLng(0.0, 0.0);
-    private var zoomMagnification = 0;
+    private var zoomMagnification = 0.0;
+    private var zoomList = arrayOf(20,50,100,200,200,500,1000,2000,5000,10000,20000,50000,
+                                100000,200000,200000,500000,1000000,2000000,5000000,10000000)
 
     private var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,18 +113,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations){
-                    ///*
                     updatedCount++
                     binding.locationText.text = "[${updatedCount}] ${location.latitude} , ${location.longitude}"
                     current_location = LatLng(location.latitude,location.longitude)
-                    //*/
                 }
             }
         }
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        //setContentView(R.layout.activity_maps)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -137,8 +138,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         binding.setNavigation.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
-                //sendLocationToGoogleMap()
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(centerPosition))
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(zoomMagnification.toFloat()))
             }
         })
     }
@@ -267,11 +268,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     }
 
     private fun calculationCenter(points : ArrayList<LatLng>){
+
         var latTmp = 0.0
         var lonTmp = 0.0
-        var latSD = 0.0
-        var lonSD = 0.0
-        var latLngSD = LatLng(0.0,0.0)
+
+        var maxDistance = 0.0
+
+        var zoomIdentifyNum = 0.0
+
         for (point in points) {
             latTmp = latTmp + point.latitude
             lonTmp = lonTmp + point.longitude
@@ -279,16 +283,37 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         latTmp = latTmp/points.size
         lonTmp = lonTmp/points.size
 
+        centerPosition = LatLng(latTmp,lonTmp)
+
         for (point in points) {
-            latSD = latSD + (point.latitude - latTmp)*(point.latitude - latTmp)
-            lonSD = lonSD + (point.longitude - lonTmp)*(point.longitude - lonTmp)
+            if(maxDistance < centerPosition.distanceBetween(point))
+                maxDistance = centerPosition.distanceBetween(point).toDouble()
         }
 
-        latSD = sqrt(latSD/points.size)
-        lonSD = sqrt(lonSD/points.size)
+        for ((index,zoom) in (zoomList.withIndex())){
+            if(zoom > maxDistance) {
+                zoomMagnification = index.toDouble()
+                if(index > 0 && index < zoomList.size)
+                    zoomIdentifyNum = (maxDistance - zoomList[index - 1]) / (zoom - zoomList[index - 1])
+                Log.d("zoomTask", "zoom : $zoom, maxDistace : $maxDistance, zoomMagnification : $zoomMagnification, zoomIdentifyNum : $zoomIdentifyNum")
+                break
+            }
+        }
+        zoomMagnification = zoomList.size - zoomMagnification + 1 + zoomIdentifyNum
+    }
 
-        latLngSD = LatLng(latSD,lonSD)
-        centerPosition = LatLng(latTmp,lonTmp)
+    fun LatLng.distanceBetween(toLatLng: LatLng): Float {
+        val results = FloatArray(1)
+        try {
+            Location.distanceBetween(
+                this.latitude, this.longitude,
+                toLatLng.latitude, toLatLng.longitude,
+                results
+            )
+        } catch (e: IllegalArgumentException) {
+            return -1.0f
+        }
+        return results[0]
     }
 
     private fun requestPermission() {
