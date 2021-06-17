@@ -20,7 +20,7 @@ exports.sendPushMessage = functions.firestore
       // 通知のタイトルと本文を設定
       const payload = {
         notification: {
-          title: `ほげ`,
+          title: `BackDoor`,
           body: data.message
         }
       };
