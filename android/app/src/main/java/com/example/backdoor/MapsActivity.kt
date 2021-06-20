@@ -294,7 +294,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             if(zoom > maxDistance) {
                 zoomMagnification = index.toDouble()
                 if(index > 0 && index < zoomList.size)
-                    zoomIdentifyNum = (maxDistance - zoomList[index - 1]) / (zoom - zoomList[index - 1])
+                    zoomIdentifyNum = 1 - ((maxDistance - zoomList[index - 1]) / (zoom - zoomList[index - 1]))
                 Log.d("zoomTask", "zoom : $zoom, maxDistace : $maxDistance, zoomMagnification : $zoomMagnification, zoomIdentifyNum : $zoomIdentifyNum")
                 break
             }
