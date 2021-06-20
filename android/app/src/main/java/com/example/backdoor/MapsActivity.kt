@@ -3,10 +3,10 @@ package com.example.backdoor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.GnssAntennaInfo
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -23,7 +23,6 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
-import java.lang.Math.sqrt
 import java.util.*
 
 
@@ -47,6 +46,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private var zoomList = arrayOf(20,50,100,200,200,500,1000,2000,5000,10000,20000,50000,
                                 100000,200000,200000,500000,1000000,2000000,5000000,10000000)
 
+    private var isSetCarLocation = false
+    private var current_car_location = LatLng(0.0,0.0)
     private var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +92,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                             Log.d("iscreateLocation", "lat : $lat, lon : $lon")
                             //Log.d("Polyline", "${mMap.}")
                         }
+                        current_car_location = points[points.size-1]
+
                         lineOptions.addAll(points);
                         lineOptions.width(10F);
                         lineOptions.color(0x550000ff);
@@ -120,6 +123,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             }
         }
 
+        val handler = Handler()
+        val r: Runnable = object : Runnable {
+            override fun run() {
+                if(isSetCarLocation) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(current_car_location))
+                }
+                handler.postDelayed(this, 3000)
+            }
+        }
+        handler.post(r)
+
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -140,6 +154,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             override fun onClick(view: View?) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(centerPosition))
                 mMap.moveCamera(CameraUpdateFactory.zoomTo(zoomMagnification.toFloat()))
+            }
+        })
+
+        binding.setCarlocation.setOnClickListener(object : View.OnClickListener {
+            // クリック時に呼ばれるメソッド
+            override fun onClick(view: View?) {
+
+                isSetCarLocation = !isSetCarLocation
+                Log.d("carLocation", "isSetCarLocation : $isSetCarLocation, currentcarlocation : $current_car_location")
             }
         })
     }
