@@ -6,6 +6,7 @@ import os
 import time
 
 def is_owner():
+    have_saved = False
 
     recognizer = cv2.face.LBPHFaceRecognizer_create()
     recognizer.read('./FaceRecognition/trainer/trainer.yml')
@@ -37,7 +38,7 @@ def is_owner():
             cv2.destroyAllWindows()
             return False
 
-        ret, img =cam.read()
+        ret, img = cam.read()
         img = cv2.flip(img, -1) # Flip vertically
 
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -70,3 +71,6 @@ def is_owner():
                 cam.release()
                 cv2.destroyAllWindows()
                 return True
+            elif not have_saved:
+                cv2.imwrite('./test_image.png', img)
+                have_saved = True
