@@ -4,3 +4,5 @@
 /**/*.pyc
 /raspberry/FaceRecognition/dataset/*
 /raspberry/Log/*
+/raspberry/CameraTest/my_pic.jpg
+/raspberry/FaceRecognition/trainer/trainer.yml

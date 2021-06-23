@@ -28,26 +28,29 @@ def main():
 
         # オーナーかを判断
         if(is_owner()):
-            
+            print('オーナーです')
+            time.sleep(10)
+            exit()
             # オーナーなら、車から降りる（detect_person==False）まで待つ
             while(1):
                 if(not detect_person()):
                     break
 
         else:
+            print('オーナーではありません')
             res = subprocess.run(["python3", 'ToFirebase/Notification.py'], stdout=subprocess.PIPE)
             sys.stdout.buffer.write(res.stdout)
             # オーナーでなければ、定期的に位置情報を報告
             while(1):
-                time.sleep(10) # 10秒に1回
+                time.sleep(3) # 3秒に1回
                 data = get_location() #(latitude, longitude, timestamp)
                 res = subprocess.run(["python3", 'ToFirebase/CurrentLocation.py', user_id, str(data[0]), str(data[1]), str(data[2])], stdout=subprocess.PIPE)
                 sys.stdout.buffer.write(res.stdout)
 
-                if(not detect_person()):
-                    time.sleep(10)
-                    if(not detect_person()):
-                        break
+                #if(not detect_person()):
+                    #time.sleep(10)
+                    #if(not detect_person()):
+                        #break
 
     return
 
