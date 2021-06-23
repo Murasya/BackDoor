@@ -3,11 +3,12 @@ package com.example.backdoor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.backdoor.databinding.ActivityMapsBinding
@@ -19,6 +20,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.*
@@ -37,14 +39,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private val db = Firebase.firestore
+    //private var currentLocation = CurrentLocation()
 
-    var current_location = LatLng(0.0, 0.0)
+    private var centerPosition = LatLng(0.0, 0.0);
+    private var zoomMagnification = 0.0;
+    private var zoomList = arrayOf(20,50,100,200,200,500,1000,2000,5000,10000,20000,50000,
+                                100000,200000,200000,500000,1000000,2000000,5000000,10000000)
+
+    private var isSetCarLocation = false
+    private var current_car_location = LatLng(0.0,0.0)
+    private var current_location = LatLng(0.0, 0.0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w("TAG", "Fetching FCM registration token failed", task.exception)
+                Log.w("fcmToken", "Fetching FCM registration token failed", task.exception)
                 return@OnCompleteListener
             }
 
@@ -53,9 +63,49 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
             // Log and toast
             val msg = getString(R.string.msg_token_fmt) + token
-            Log.d("TAG", msg)
+            Log.d("fcmToken", msg)
             val user = User(msg)
-            db.collection("Users").document("AndroidUser").set(user)
+            val userId = "AndroidUser"
+            db.collection("Users").document(userId)
+                .set(user)
+                .addOnSuccessListener { Log.d("fcmToken", "DocumentSnapshot successfully written!") }
+                .addOnFailureListener { e -> Log.w("fcmToken", "Error writing document", e) }
+            val docRef = db.collection("CurrentLocation").document(userId)
+            docRef.addSnapshotListener {snapshot, e ->
+                if (e != null) {
+                    Log.w("getFirebase", "listen:error", e)
+                    return@addSnapshotListener
+                }
+                if(snapshot != null && snapshot.exists()) {
+                    val currentLocation = snapshot.toObject<CurrentLocation>()!!
+                    //if(currentLocation.latitude?.iterator() != null) {
+                    Log.d("iscreateLocation", "true")
+                    if(currentLocation.latitude != null && currentLocation.longitude != null) {
+                        val points = ArrayList<LatLng>()
+                        val lineOptions = PolylineOptions()
+                        val latIterator = currentLocation.latitude.iterator()
+                        val lonIterator = currentLocation.longitude.iterator()
+                        while (latIterator.hasNext() && lonIterator.hasNext()) {
+                            val lat = latIterator.next()
+                            val lon = lonIterator.next()
+                            points.add(LatLng(lat,lon))
+                            Log.d("iscreateLocation", "lat : $lat, lon : $lon")
+                            //Log.d("Polyline", "${mMap.}")
+                        }
+                        current_car_location = points[points.size-1]
+
+                        lineOptions.addAll(points);
+                        lineOptions.width(10F);
+                        lineOptions.color(0x550000ff);
+
+                        calculationCenter(points)
+                        mMap.addPolyline(lineOptions)
+                    }
+                    Log.d("getFirebase", "Current data: $currentLocation")
+                } else {
+                    Log.d("getFirebase", "Current data: null")
+                }
+            }
         })
 
         requestPermission()
@@ -66,18 +116,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations){
-                    ///*
                     updatedCount++
                     binding.locationText.text = "[${updatedCount}] ${location.latitude} , ${location.longitude}"
                     current_location = LatLng(location.latitude,location.longitude)
-                    //*/
                 }
             }
         }
 
+        val handler = Handler()
+        val r: Runnable = object : Runnable {
+            override fun run() {
+                if(isSetCarLocation) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(current_car_location))
+                }
+                handler.postDelayed(this, 3000)
+            }
+        }
+        handler.post(r)
+
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        //setContentView(R.layout.activity_maps)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -94,7 +152,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         binding.setNavigation.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
-                //sendLocationToGoogleMap()
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(centerPosition))
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(zoomMagnification.toFloat()))
+            }
+        })
+
+        binding.setCarlocation.setOnClickListener(object : View.OnClickListener {
+            // クリック時に呼ばれるメソッド
+            override fun onClick(view: View?) {
+
+                isSetCarLocation = !isSetCarLocation
+                Log.d("carLocation", "isSetCarLocation : $isSetCarLocation, currentcarlocation : $current_car_location")
             }
         })
     }
@@ -205,6 +273,70 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         )
         intent.data = Uri.parse(str)
         startActivity(intent)
+    }
+
+    //盗まれた場合、自身の駐車場から盗難車の現在位置までの経路を生成
+    private fun createLocationPAToStolenCar(googleMap: GoogleMap, currentLocation: CurrentLocation){
+        var i = 0
+        if(currentLocation.time?.iterator() != null) {
+            while (currentLocation.time?.iterator()!!.hasNext()) {
+                mMap.addPolyline(PolylineOptions()
+                    .clickable(true)
+                    .add(
+                        currentLocation.latitude?.let { currentLocation.longitude?.let { it1 -> LatLng(it.get(i), it1.get(i)) } }))
+                i = i+1
+            }
+        }
+    // Store a data object with the polyline, used here to indicate an arbitrary type.
+    }
+
+    private fun calculationCenter(points : ArrayList<LatLng>){
+
+        var latTmp = 0.0
+        var lonTmp = 0.0
+
+        var maxDistance = 0.0
+
+        var zoomIdentifyNum = 0.0
+
+        for (point in points) {
+            latTmp = latTmp + point.latitude
+            lonTmp = lonTmp + point.longitude
+        }
+        latTmp = latTmp/points.size
+        lonTmp = lonTmp/points.size
+
+        centerPosition = LatLng(latTmp,lonTmp)
+
+        for (point in points) {
+            if(maxDistance < centerPosition.distanceBetween(point))
+                maxDistance = centerPosition.distanceBetween(point).toDouble()
+        }
+
+        for ((index,zoom) in (zoomList.withIndex())){
+            if(zoom > maxDistance) {
+                zoomMagnification = index.toDouble()
+                if(index > 0 && index < zoomList.size)
+                    zoomIdentifyNum = 1 - ((maxDistance - zoomList[index - 1]) / (zoom - zoomList[index - 1]))
+                Log.d("zoomTask", "zoom : $zoom, maxDistace : $maxDistance, zoomMagnification : $zoomMagnification, zoomIdentifyNum : $zoomIdentifyNum")
+                break
+            }
+        }
+        zoomMagnification = zoomList.size - zoomMagnification + 1 + zoomIdentifyNum
+    }
+
+    fun LatLng.distanceBetween(toLatLng: LatLng): Float {
+        val results = FloatArray(1)
+        try {
+            Location.distanceBetween(
+                this.latitude, this.longitude,
+                toLatLng.latitude, toLatLng.longitude,
+                results
+            )
+        } catch (e: IllegalArgumentException) {
+            return -1.0f
+        }
+        return results[0]
     }
 
     private fun requestPermission() {

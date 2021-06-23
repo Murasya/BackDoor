@@ -2,4 +2,6 @@
     <string name="app_name">BackDoor</string>
     <string name="msg_token_fmt"></string>
     <string name="title_activity_maps">Map</string>
+    <string name="fcm_message">BackDoor</string>
+    <string name="default_notification_channel_id">fcm_default_channel</string>
 </resources>
