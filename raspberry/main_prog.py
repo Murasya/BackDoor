@@ -38,6 +38,8 @@ def main():
 
         else:
             print('オーナーではありません')
+            res = subprocess.run(["python3", 'ToFirebase/raspberry_to_storage.py'], stdout=subprocess.PIPE)
+            sys.stdout.buffer.write(res.stdout)
             res = subprocess.run(["python3", 'ToFirebase/Notification.py'], stdout=subprocess.PIPE)
             sys.stdout.buffer.write(res.stdout)
             # オーナーでなければ、定期的に位置情報を報告

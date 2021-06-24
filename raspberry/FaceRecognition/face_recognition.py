@@ -72,5 +72,5 @@ def is_owner():
                 cv2.destroyAllWindows()
                 return True
             elif not have_saved:
-                cv2.imwrite('./test_image.png', img)
+                cv2.imwrite('./face_image.png', img)
                 have_saved = True
