@@ -5,6 +5,7 @@
 from FaceRecognition.face_recognition import is_owner
 from DistanceDetection.distance_detection import detect_person
 from GPSmodule.gps import get_location
+from Sleep.detect_sleep import detect
 # from ToFirebase.CurrentLocation import send_location
 # from ToFirebase.Notification import notify
 import time
@@ -29,10 +30,10 @@ def main():
         # オーナーかを判断
         if(is_owner()):
             print('オーナーです')
-            time.sleep(10)
-            exit()
+            # time.sleep(10)
             # オーナーなら、車から降りる（detect_person==False）まで待つ
             while(1):
+                detect() # 眠気の検知
                 if(not detect_person()):
                     break
 

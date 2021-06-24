@@ -1,4 +1,5 @@
 # リアルタイムで実装するならこっち（20fps出たわ）
+# 1分間に11.5%より多く目を瞑ってたらダメ
 
 import cv2
 import dlib
@@ -9,6 +10,7 @@ from scipy.spatial import distance
 import time
 import copy
 import os
+from collections import deque
 
 def calc_eye(eye):
     p2_p6 = distance.euclidean(eye[1], eye[5])
@@ -33,8 +35,10 @@ frame_height= cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 minW = 0.1*cap.get(3)
 minH = 0.1*cap.get(4)
 
+q = deque()
+is_close = False
+n_close = 0
 n_all = 0
-n_close_eye = 0
 while True:
     tick = cv2.getTickCount()
 
@@ -43,9 +47,6 @@ while True:
         break
 
     frame = cv2.flip(frame, -1)
-    
-    # cv2.imwrite('a.jpg', frame)
-    # break
     
     frame = cv2.resize(frame, dsize=(int(frame_width),int(frame_height)))
     face_frame = copy.deepcopy(frame)
@@ -57,7 +58,7 @@ while True:
             minNeighbors = 5,
             minSize = (int(minW), int(minH)),
         )
-    print(len(faces)==0)
+    # print(len(faces)==0)
     
     if len(faces) == 0:
         continue
@@ -75,12 +76,25 @@ while True:
     right_eye = face_parts[36:42]
     right_eye_ear = calc_eye(right_eye)
     
-    # n_all += 1
     if left_eye_ear < 0.2 or right_eye_ear < 0.2:
-        # n_close_eye += 1
         print('close')
+        is_close = True
     else:
         print('open')
+        is_close = False
+    
+    n_all += 1
+    n_close += int(is_close)
+    now = time.time()
+    q.append([now, is_close])
+    while now - q[0][0] > 60:
+        l = q.popleft()
+        n_all -= 1
+        n_close -= int(l[1])
+
+    if n_close / n_all > 0.115:
+        print('寝てるやん！')
+        exit()
 
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - tick)
-    print(fps)
+    # print(fps)
