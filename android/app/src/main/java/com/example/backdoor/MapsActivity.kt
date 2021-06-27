@@ -3,7 +3,6 @@ package com.example.backdoor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.GnssAntennaInfo
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -23,7 +22,8 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
-import java.lang.Math.sqrt
+import com.google.firebase.storage.ktx.storage
+import java.io.File
 import java.util.*
 
 
@@ -104,6 +104,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 }
             }
         })
+
+        val storage = Firebase.storage
+        var storageRef = storage.reference
+        var pathReference = storageRef.child("IMG_0076.png")
+        val localFile = File.createTempFile("images", "png")
+
+        pathReference.getFile(localFile).addOnSuccessListener {
+            Log.d("storage", "Local temp file has been created")
+        }.addOnFailureListener {
+            Log.d("storage", "Handle any errors")
+        }
 
         requestPermission()
 
