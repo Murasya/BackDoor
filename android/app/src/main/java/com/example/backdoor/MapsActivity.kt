@@ -1,15 +1,22 @@
 package com.example.backdoor
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.location.Location
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.backdoor.databinding.ActivityMapsBinding
@@ -26,6 +33,10 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
+import java.io.File
+import java.io.FileOutputStream
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -53,8 +64,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private var isSetCarLocation = false
     private var current_car_location = LatLng(0.0,0.0)
     private var current_location = LatLng(0.0, 0.0)
+    @SuppressLint("WrongConstant")
+    @RequiresApi(Build.VERSION_CODES.KITKAT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestPermission()
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -118,13 +133,50 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         val ONE_MEGABYTE: Long = 1024*1024
         pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener {
             Log.d("storage", "Data for \"images/island.jpg\" is returned, use this as needed")
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                1)
             val bmp = BitmapFactory.decodeByteArray(it, 0, it.size)
+            //val externalPath = applicationContext.filesDir.toString() + "/Pictures"
+            val externalPath = applicationContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+            val time = getNowDate().toString()
+            val fileName = "images" + time + ".png"
+            //val fileName = "aiueo.png"
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                1)
+            val outputFile = File(externalPath,fileName)
+            Log.d("outputFile", "outputFile : $outputFile")
+            val ops = FileOutputStream(outputFile)
+            bmp.compress(Bitmap.CompressFormat.PNG,100,ops)
+            ops.close()
+
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpg")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+
+            val collection = MediaStore.Images.Media
+                .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val item = contentResolver.insert(collection, values)!!
+
+            contentResolver.openFileDescriptor(item, "w", null).use {
+                // write something to OutputStream
+                FileOutputStream(it!!.fileDescriptor).use { outputStream ->
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                    outputStream.close()
+                }
+            }
+
+            values.clear()
+            values.put(MediaStore.Images.Media.IS_PENDING, 0)
+            contentResolver.update(item, values, null, null)
+
             binding.imageView.setImageBitmap(bmp)
         }.addOnFailureListener {
             Log.d("storage", "Handle any errors")
         }
-
-        requestPermission()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         var updatedCount = 0
@@ -227,6 +279,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         //val sydney = LatLng(-34.0, 151.0)
         //mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+    }
+
+    fun getNowDate(): String? {
+        val df: DateFormat = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
+        val date = Date(System.currentTimeMillis())
+        return df.format(date)
     }
 
     private fun startLocationUpdates() {
@@ -372,7 +430,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             } else {
                 // フォアグラウンドのみOKなので、バックグラウンドの許可を求める
                 ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     PERMISSION_REQUEST_CODE
                 )
             }
@@ -382,7 +441,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 arrayOf(
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
                 ),
                 PERMISSION_REQUEST_CODE
             )
