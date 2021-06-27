@@ -3,6 +3,8 @@ package com.example.backdoor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -22,6 +24,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
 import java.io.File
 import java.util.*
@@ -40,6 +43,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private val db = Firebase.firestore
+    private val storage = FirebaseStorage.getInstance()
     //private var currentLocation = CurrentLocation()
 
     private var centerPosition = LatLng(0.0, 0.0);
@@ -106,12 +110,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         })
 
         val storage = Firebase.storage
-        var storageRef = storage.reference
-        var pathReference = storageRef.child("IMG_0076.png")
-        val localFile = File.createTempFile("images", "png")
-
-        pathReference.getFile(localFile).addOnSuccessListener {
-            Log.d("storage", "Local temp file has been created")
+        val storageRef = storage.reference
+        val pathReference = storageRef.child("IMG_0076.png")
+        val ONE_MEGABYTE: Long = 1024*1024
+        pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener {
+            Log.d("storage", "Data for \"images/island.jpg\" is returned, use this as needed")
+            val bmp = BitmapFactory.decodeByteArray(it, 0, it.size)
+            binding.imageView.setImageBitmap(bmp)
         }.addOnFailureListener {
             Log.d("storage", "Handle any errors")
         }
