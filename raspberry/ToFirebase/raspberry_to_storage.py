@@ -12,7 +12,7 @@ firebase_admin.initialize_app(cred, {
 
 bucket = storage.bucket()
 
-filename = './face_image.png'
+filename = 'face_image.png'
 content_type = 'image/png'
 blob = bucket.blob(filename)
 with open(filename, 'rb') as f:
