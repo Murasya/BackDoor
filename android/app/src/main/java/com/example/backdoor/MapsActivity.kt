@@ -43,6 +43,7 @@ import java.util.*
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
     GoogleMap.OnPolygonClickListener {
 
+    //各種変数の設定
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1234
     }
@@ -70,8 +71,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        //位置情報およびストレージへのアクセス権を要求:岩谷
         requestPermission()
-
+        //Firebaseから経路情報を取得
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Log.w("fcmToken", "Fetching FCM registration token failed", task.exception)
@@ -100,11 +102,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                     val currentLocation = snapshot.toObject<CurrentLocation>()!!
                     //if(currentLocation.latitude?.iterator() != null) {
                     Log.d("iscreateLocation", "true")
+                    //自動車の経路情報が格納されている場合、地図上に経路を表示する機能：岩谷
                     if(currentLocation.latitude != null && currentLocation.longitude != null) {
+                        //各種変数の設定：岩谷
                         val points = ArrayList<LatLng>()
                         val lineOptions = PolylineOptions()
                         val latIterator = currentLocation.latitude.iterator()
                         val lonIterator = currentLocation.longitude.iterator()
+                        //経路情報をポリラインのリストに格納：岩谷
                         while (latIterator.hasNext() && lonIterator.hasNext()) {
                             val lat = latIterator.next()
                             val lon = lonIterator.next()
@@ -114,22 +119,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                         }
                         if(points.size > 0)
                             current_car_location = points[points.size-1]
-
+                        //ポリラインを設定：岩谷
                         lineOptions.addAll(points);
                         lineOptions.width(10F);
                         lineOptions.color(0x550000ff);
 
                         calculationCenter(points)
+                        //ポリラインを表示：岩谷
                         mMap.addPolyline(lineOptions)
                     }
                     Log.d("getFirebase", "Current data: $currentLocation")
                 } else {
+                    //経路情報がない場合，ポリラインを削除：岩谷
                     mMap.clear()
                     Log.d("getFirebase", "Current data: null")
                 }
             }
         })
 
+        //Firebaseから画像を取得
         val storage = Firebase.storage
         val storageRef = storage.reference
         val pathReference = storageRef.child("face_image.png")
@@ -139,15 +147,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 1)
+            //画面に表示するために顔写真画像をBitmapに変換：岩谷
             val bmp = BitmapFactory.decodeByteArray(it, 0, it.size)
-            //val externalPath = applicationContext.filesDir.toString() + "/Pictures"
             val externalPath = applicationContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
             val time = getNowDate().toString()
+            //ファイル名を決定：岩谷
             val fileName = "images" + time + ".png"
-            //val fileName = "aiueo.png"
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 1)
+            //アプリ内ストレージ保存用の顔写真画像のファイルを作成：岩谷
             val outputFile = File(externalPath,fileName)
             Log.d("outputFile", "outputFile : $outputFile")
             val ops = FileOutputStream(outputFile)
@@ -155,9 +164,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             ops.close()
 
             if(Build.VERSION.SDK_INT <= 28){
-                //APIレベル28以前の機種の場合の処理
+                //APIレベル28以前の機種の場合の処理：岩谷
             }else if(Build.VERSION.SDK_INT >= 29){
-                //APIレベル29以降の機種の場合の処理
+                //APIレベル29以降の機種の場合の処理：岩谷
+                //アプリケーションの内部ストレージ内のファイルがOSのPicturesフォルダから見れるように設定：岩谷
                 val values = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpg")
@@ -180,12 +190,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 values.put(MediaStore.Images.Media.IS_PENDING, 0)
                 contentResolver.update(item, values, null, null)
             }
-
+            //顔写真画像を画面上に表示：岩谷
             binding.imageView.setImageBitmap(bmp)
         }.addOnFailureListener {
             Log.d("storage", "Handle any errors")
         }
 
+        //Androidの位置情報を取得：岩谷
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         var updatedCount = 0
         locationCallback = object : LocationCallback() {
@@ -199,17 +210,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             }
         }
 
+        //自動車位置を追従するフラグがtrueの場合、追従：岩谷
         val handler = Handler()
         val r: Runnable = object : Runnable {
             override fun run() {
+                //フラグがtureの場合、マップのカメラ位置を移動：岩谷
                 if(isSetCarLocation) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(current_car_location))
                 }
+                //3秒に一回実行：岩谷
                 handler.postDelayed(this, 3000)
             }
         }
         handler.post(r)
 
+        //UIの設定：岩谷
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.imageView.visibility = View.INVISIBLE
@@ -219,36 +234,45 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        //「現在位置を表示」ボタンを押したときの処理：岩谷
         binding.setCurrentLocation.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
+                //マップのカメラ位置を現在位置に変更：岩谷
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(current_location))
             }
         })
 
+        //「経路全体を表示」ボタンを押したときの処理：岩谷
         binding.setNavigation.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
+                //経路全体を表示するようカメラ位置を変更：岩谷
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(centerPosition))
                 mMap.moveCamera(CameraUpdateFactory.zoomTo(zoomMagnification.toFloat()))
             }
         })
 
+        //「自動車位置表示」ボタンを押したときの処理：岩谷
         binding.setCarlocation.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
-
+                //自動車位置を表示するフラグのオンオフ：岩谷
                 isSetCarLocation = !isSetCarLocation
                 Log.d("carLocation", "isSetCarLocation : $isSetCarLocation, currentcarlocation : $current_car_location")
             }
         })
 
+        //「犯人の写真を表示」ボタンを押したときの処理：岩谷
         binding.setPicture.setOnClickListener(object : View.OnClickListener {
             // クリック時に呼ばれるメソッド
             override fun onClick(view: View?) {
+                //フラグの切り替え
                 isShowPicure = !isShowPicure
+                //オンの場合顔写真を可視化
                 if(isShowPicure){
                     binding.imageView.visibility = View.VISIBLE
+                    //オフの場合顔写真を不可視化
                 }else{
                     binding.imageView.visibility = View.INVISIBLE
                 }
@@ -275,6 +299,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+    //マップの初期処理：岩谷
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
@@ -302,12 +327,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
     }
 
+    //現在の日時を取得：岩谷
     fun getNowDate(): String? {
         val df: DateFormat = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
         val date = Date(System.currentTimeMillis())
         return df.format(date)
     }
 
+    //androidの位置座標取得開始時の処理
     private fun startLocationUpdates() {
         val locationRequest = createLocationRequest() ?: return
         if (ActivityCompat.checkSelfPermission(
@@ -337,6 +364,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
+    //何秒ごとに位置座標を取得するか設定：岩谷
     private fun createLocationRequest(): LocationRequest? {
         return LocationRequest.create()?.apply {
             interval = 10000
@@ -385,6 +413,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     // Store a data object with the polyline, used here to indicate an arbitrary type.
     }
 
+    //経路全体を表示するための処理：岩谷
     private fun calculationCenter(points : ArrayList<LatLng>){
 
         var latTmp = 0.0
@@ -420,6 +449,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         zoomMagnification = zoomList.size - zoomMagnification + 1 + zoomIdentifyNum
     }
 
+    //座標二点間の距離を計算：岩谷
     fun LatLng.distanceBetween(toLatLng: LatLng): Float {
         val results = FloatArray(1)
         try {
@@ -434,6 +464,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         return results[0]
     }
 
+    //位置座標、ストレージアクセスの権限のリクエスト処理
     private fun requestPermission() {
         val permissionAccessCoarseLocationApproved =
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
