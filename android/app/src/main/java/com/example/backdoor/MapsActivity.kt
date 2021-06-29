@@ -112,7 +112,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                             Log.d("iscreateLocation", "lat : $lat, lon : $lon")
                             //Log.d("Polyline", "${mMap.}")
                         }
-                        current_car_location = points[points.size-1]
+                        if(points.size > 0)
+                            current_car_location = points[points.size-1]
 
                         lineOptions.addAll(points);
                         lineOptions.width(10F);
@@ -123,6 +124,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                     }
                     Log.d("getFirebase", "Current data: $currentLocation")
                 } else {
+                    mMap.clear()
                     Log.d("getFirebase", "Current data: null")
                 }
             }
@@ -153,9 +155,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             ops.close()
 
             if(Build.VERSION.SDK_INT <= 28){
-                //APIレベル10以前の機種の場合の処理
+                //APIレベル28以前の機種の場合の処理
             }else if(Build.VERSION.SDK_INT >= 29){
-                //APIレベル11以降の機種の場合の処理
+                //APIレベル29以降の機種の場合の処理
                 val values = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpg")
