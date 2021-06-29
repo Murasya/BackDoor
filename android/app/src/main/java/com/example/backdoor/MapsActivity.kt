@@ -61,6 +61,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
     private var zoomList = arrayOf(20,50,100,200,200,500,1000,2000,5000,10000,20000,50000,
                                 100000,200000,200000,500000,1000000,2000000,5000000,10000000)
 
+    private var isShowPicure = false
     private var isSetCarLocation = false
     private var current_car_location = LatLng(0.0,0.0)
     private var current_location = LatLng(0.0, 0.0)
@@ -151,27 +152,32 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             bmp.compress(Bitmap.CompressFormat.PNG,100,ops)
             ops.close()
 
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/jpg")
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-
-            val collection = MediaStore.Images.Media
-                .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-            val item = contentResolver.insert(collection, values)!!
-
-            contentResolver.openFileDescriptor(item, "w", null).use {
-                // write something to OutputStream
-                FileOutputStream(it!!.fileDescriptor).use { outputStream ->
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    outputStream.close()
+            if(Build.VERSION.SDK_INT <= 28){
+                //APIレベル10以前の機種の場合の処理
+            }else if(Build.VERSION.SDK_INT >= 29){
+                //APIレベル11以降の機種の場合の処理
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpg")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
                 }
-            }
 
-            values.clear()
-            values.put(MediaStore.Images.Media.IS_PENDING, 0)
-            contentResolver.update(item, values, null, null)
+                val collection = MediaStore.Images.Media
+                    .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                val item = contentResolver.insert(collection, values)!!
+
+                contentResolver.openFileDescriptor(item, "w", null).use {
+                    // write something to OutputStream
+                    FileOutputStream(it!!.fileDescriptor).use { outputStream ->
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                        outputStream.close()
+                    }
+                }
+
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                contentResolver.update(item, values, null, null)
+            }
 
             binding.imageView.setImageBitmap(bmp)
         }.addOnFailureListener {
@@ -204,6 +210,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.imageView.visibility = View.INVISIBLE
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -231,6 +238,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
                 isSetCarLocation = !isSetCarLocation
                 Log.d("carLocation", "isSetCarLocation : $isSetCarLocation, currentcarlocation : $current_car_location")
+            }
+        })
+
+        binding.setPicture.setOnClickListener(object : View.OnClickListener {
+            // クリック時に呼ばれるメソッド
+            override fun onClick(view: View?) {
+                isShowPicure = !isShowPicure
+                if(isShowPicure){
+                    binding.imageView.visibility = View.VISIBLE
+                }else{
+                    binding.imageView.visibility = View.INVISIBLE
+                }
             }
         })
     }
