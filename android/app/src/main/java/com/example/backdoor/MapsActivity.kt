@@ -130,7 +130,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
         val storage = Firebase.storage
         val storageRef = storage.reference
-        val pathReference = storageRef.child("IMG_0076.png")
+        val pathReference = storageRef.child("face_image.png")
         val ONE_MEGABYTE: Long = 1024*1024
         pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener {
             Log.d("storage", "Data for \"images/island.jpg\" is returned, use this as needed")
